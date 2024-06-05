@@ -1,4 +1,5 @@
 // External libraries are lazy-loaded only if these file types exist.
+const { execFileSync } = require('child_process');
 const util = require("util");
 
 // webpack can't solve dynamic module
@@ -165,12 +166,12 @@ Parser.yamlParser = function(filename, content) {
 };
 
 Parser.jsonParser = function(filename, content) {
-  /**
-   * Default JSON parsing to JSON5 parser.
-   * This is due to issues with removing supported comments.
-   * More information can be found here: https://github.com/node-config/node-config/issues/715
-   */
-  return JSON5.parse(content);
+  const maybeEncrypted = JSON.parse(content);
+  if (maybeEncrypted.sops) {
+    return JSON.parse(execFileSync('sops', ['--decrypt', filename]));
+  } else {
+    return maybeEncrypted;
+  }
 };
 
 Parser.json5Parser = function(filename, content) {
